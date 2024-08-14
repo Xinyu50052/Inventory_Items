@@ -1,8 +1,8 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { firestore } from '@/firebase'
 import { Box, Modal, Typography, Stack, TextField, Button } from '@mui/material'
+import { firestore } from '@/firebase'
 import { collection, deleteDoc, doc, getDocs, getDoc, setDoc, query } from 'firebase/firestore'
 
 export default function Home() {
@@ -12,54 +12,64 @@ export default function Home() {
   const [searchTerm, setSearchTerm] = useState('')
 
   const updateInventory = async () => {
-    const snapshot = query(collection(firestore, 'inventory'))
-    const docs = await getDocs(snapshot)
-    const inventoryList = []
-    docs.forEach((doc) => {
-      inventoryList.push({ name: doc.id, ...doc.data() })
-    })
-    setInventory(inventoryList)
+    if (typeof window !== 'undefined') {
+      const snapshot = query(collection(firestore, 'inventory'))
+      const docs = await getDocs(snapshot)
+      const inventoryList = []
+      docs.forEach((doc) => {
+        inventoryList.push({ name: doc.id, ...doc.data() })
+      })
+      setInventory(inventoryList)
+    }
   }
 
   const addItem = async (item) => {
-    const docRef = doc(collection(firestore, 'inventory'), item)
-    const docSnap = await getDoc(docRef)
-    if (docSnap.exists()) {
-      const { quantity } = docSnap.data()
-      await setDoc(docRef, { quantity: quantity + 1 })
-    } else {
-      await setDoc(docRef, { quantity: 1 })
+    if (typeof window !== 'undefined') {
+      const docRef = doc(collection(firestore, 'inventory'), item)
+      const docSnap = await getDoc(docRef)
+      if (docSnap.exists()) {
+        const { quantity } = docSnap.data()
+        await setDoc(docRef, { quantity: quantity + 1 })
+      } else {
+        await setDoc(docRef, { quantity: 1 })
+      }
+      await updateInventory()
     }
-    await updateInventory()
   }
 
   const removeItem = async (item) => {
-    const docRef = doc(collection(firestore, 'inventory'), item)
-    await deleteDoc(docRef)
-    await updateInventory()
+    if (typeof window !== 'undefined') {
+      const docRef = doc(collection(firestore, 'inventory'), item)
+      await deleteDoc(docRef)
+      await updateInventory()
+    }
   }
 
   const increaseQuantity = async (item) => {
-    const docRef = doc(collection(firestore, 'inventory'), item)
-    const docSnap = await getDoc(docRef)
-    if (docSnap.exists()) {
-      const { quantity } = docSnap.data()
-      await setDoc(docRef, { quantity: quantity + 1 })
-      await updateInventory()
+    if (typeof window !== 'undefined') {
+      const docRef = doc(collection(firestore, 'inventory'), item)
+      const docSnap = await getDoc(docRef)
+      if (docSnap.exists()) {
+        const { quantity } = docSnap.data()
+        await setDoc(docRef, { quantity: quantity + 1 })
+        await updateInventory()
+      }
     }
   }
 
   const decreaseQuantity = async (item) => {
-    const docRef = doc(collection(firestore, 'inventory'), item)
-    const docSnap = await getDoc(docRef)
-    if (docSnap.exists()) {
-      const { quantity } = docSnap.data()
-      if (quantity > 1) {
-        await setDoc(docRef, { quantity: quantity - 1 })
-      } else {
-        await deleteDoc(docRef)
+    if (typeof window !== 'undefined') {
+      const docRef = doc(collection(firestore, 'inventory'), item)
+      const docSnap = await getDoc(docRef)
+      if (docSnap.exists()) {
+        const { quantity } = docSnap.data()
+        if (quantity > 1) {
+          await setDoc(docRef, { quantity: quantity - 1 })
+        } else {
+          await deleteDoc(docRef)
+        }
+        await updateInventory()
       }
-      await updateInventory()
     }
   }
 
@@ -133,7 +143,7 @@ export default function Home() {
         </Box>
         <Stack width="100%" height="calc(100vh - 200px)" spacing={0} overflow={'auto'}>
           {filteredInventory.map(({ name, quantity }, index) => {
-            const isGreenBackground = index % 2 === 0 // Start with green for the first item and alternate
+            const isGreenBackground = index % 2 === 0
             return (
               <Box
                 key={name}
@@ -162,7 +172,7 @@ export default function Home() {
                       borderColor: isGreenBackground ? '#4CAF50' : '#fff',
                       color: isGreenBackground ? '#4CAF50' : '#fff',
                       backgroundColor: isGreenBackground ? '#fff' : '#4CAF50',
-                      transition: 'background-color 0.3s',
+                      transition: 'background-color 0.3s'
                     }}
                     onClick={() => decreaseQuantity(name)}
                     onMouseOver={(e) => e.currentTarget.style.backgroundColor = isGreenBackground ? '#c7c5c5' : '#3a8a3d'}
@@ -185,7 +195,7 @@ export default function Home() {
                       borderColor: isGreenBackground ? '#4CAF50' : '#fff',
                       color: isGreenBackground ? '#4CAF50' : '#fff',
                       backgroundColor: isGreenBackground ? '#fff' : '#4CAF50',
-                      transition: 'background-color 0.3s',
+                      transition: 'background-color 0.3s'
                     }}
                     onClick={() => increaseQuantity(name)}
                     onMouseOver={(e) => e.currentTarget.style.backgroundColor = isGreenBackground ? '#c7c5c5' : '#3a8a3d'}
@@ -196,7 +206,7 @@ export default function Home() {
                   <Button
                     variant="contained"
                     style={{ backgroundColor: '#C70039' }}
-                    onClick={() => removeItem(name)} // Deletes all quantities of the item
+                    onClick={() => removeItem(name)}
                   >
                     Remove
                   </Button>
