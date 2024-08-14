@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { Box, Modal, Typography, Stack, TextField, Button } from '@mui/material'
+import { firestore, collection, deleteDoc, doc, getDocs, getDoc, setDoc, query } from '@/firebase'
 
 export default function Home() {
   const [inventory, setInventory] = useState([])
@@ -9,86 +10,61 @@ export default function Home() {
   const [itemName, setItemName] = useState('')
   const [searchTerm, setSearchTerm] = useState('')
 
-  // Dynamically import Firebase modules
-  useEffect(() => {
-    async function loadFirebase() {
-      const { firestore, collection, deleteDoc, doc, getDocs, getDoc, setDoc, query } = await import('@/firebase')
+  const updateInventory = async () => {
+    const snapshot = query(collection(firestore, 'inventory'))
+    const docs = await getDocs(snapshot)
+    const inventoryList = []
+    docs.forEach((doc) => {
+      inventoryList.push({ name: doc.id, ...doc.data() })
+    })
+    setInventory(inventoryList)
+  }
 
-      const updateInventory = async () => {
-        const snapshot = query(collection(firestore, 'inventory'))
-        const docs = await getDocs(snapshot)
-        const inventoryList = []
-        docs.forEach((doc) => {
-          inventoryList.push({ name: doc.id, ...doc.data() })
-        })
-        setInventory(inventoryList)
-      }
+  const addItem = async (item) => {
+    const docRef = doc(collection(firestore, 'inventory'), item)
+    const docSnap = await getDoc(docRef)
+    if (docSnap.exists()) {
+      const { quantity } = docSnap.data()
+      await setDoc(docRef, { quantity: quantity + 1 })
+    } else {
+      await setDoc(docRef, { quantity: 1 })
+    }
+    await updateInventory()
+  }
 
-      const addItem = async (item) => {
-        const docRef = doc(collection(firestore, 'inventory'), item)
-        const docSnap = await getDoc(docRef)
-        if (docSnap.exists()) {
-          const { quantity } = docSnap.data()
-          await setDoc(docRef, { quantity: quantity + 1 })
-        } else {
-          await setDoc(docRef, { quantity: 1 })
-        }
-        await updateInventory()
-      }
+  const removeItem = async (item) => {
+    const docRef = doc(collection(firestore, 'inventory'), item)
+    await deleteDoc(docRef)
+    await updateInventory()
+  }
 
-      const removeItem = async (item) => {
-        const docRef = doc(collection(firestore, 'inventory'), item)
-        await deleteDoc(docRef)
-        await updateInventory()
-      }
-
-      const increaseQuantity = async (item) => {
-        const docRef = doc(collection(firestore, 'inventory'), item)
-        const docSnap = await getDoc(docRef)
-        if (docSnap.exists()) {
-          const { quantity } = docSnap.data()
-          await setDoc(docRef, { quantity: quantity + 1 })
-          await updateInventory()
-        }
-      }
-
-      const decreaseQuantity = async (item) => {
-        const docRef = doc(collection(firestore, 'inventory'), item)
-        const docSnap = await getDoc(docRef)
-        if (docSnap.exists()) {
-          const { quantity } = docSnap.data()
-          if (quantity > 1) {
-            await setDoc(docRef, { quantity: quantity - 1 })
-          } else {
-            await deleteDoc(docRef)
-          }
-          await updateInventory()
-        }
-      }
-
-      // Update the inventory on the initial load
+  const increaseQuantity = async (item) => {
+    const docRef = doc(collection(firestore, 'inventory'), item)
+    const docSnap = await getDoc(docRef)
+    if (docSnap.exists()) {
+      const { quantity } = docSnap.data()
+      await setDoc(docRef, { quantity: quantity + 1 })
       await updateInventory()
-
-      // Set functions to state to use in component
-      setInventoryFunctions({
-        addItem,
-        removeItem,
-        increaseQuantity,
-        decreaseQuantity,
-      })
     }
+  }
 
-    if (typeof window !== 'undefined') {
-      loadFirebase()
+  const decreaseQuantity = async (item) => {
+    const docRef = doc(collection(firestore, 'inventory'), item)
+    const docSnap = await getDoc(docRef)
+    if (docSnap.exists()) {
+      const { quantity } = docSnap.data()
+      if (quantity > 1) {
+        await setDoc(docRef, { quantity: quantity - 1 })
+      } else {
+        await deleteDoc(docRef)
+      }
+      await updateInventory()
     }
+  }
+
+  useEffect(() => {
+    updateInventory()
   }, [])
-
-  const [inventoryFunctions, setInventoryFunctions] = useState({
-    addItem: () => {},
-    removeItem: () => {},
-    increaseQuantity: () => {},
-    decreaseQuantity: () => {},
-  })
 
   const handleOpen = () => setOpen(true)
   const handleClose = () => setOpen(false)
@@ -182,12 +158,12 @@ export default function Home() {
                       height: '30px',
                       width: '30px',
                       fontSize: '16px',
-                      borderColor: isGreenBackground ? '#4CAF50' : '#fff',
+                      borderColor: isGreenBackground ? '#fff' : '#4CAF50',
                       color: isGreenBackground ? '#4CAF50' : '#fff',
                       backgroundColor: isGreenBackground ? '#fff' : '#4CAF50',
                       transition: 'background-color 0.3s'
                     }}
-                    onClick={() => inventoryFunctions.decreaseQuantity(name)}
+                    onClick={() => decreaseQuantity(name)}
                     onMouseOver={(e) => e.currentTarget.style.backgroundColor = isGreenBackground ? '#c7c5c5' : '#3a8a3d'}
                     onMouseOut={(e) => e.currentTarget.style.backgroundColor = isGreenBackground ? '#fff' : '#4CAF50'}
                   >
@@ -205,12 +181,12 @@ export default function Home() {
                       height: '30px',
                       width: '30px',
                       fontSize: '16px',
-                      borderColor: isGreenBackground ? '#4CAF50' : '#fff',
+                      borderColor: isGreenBackground ? '#fff' : '#4CAF50',
                       color: isGreenBackground ? '#4CAF50' : '#fff',
                       backgroundColor: isGreenBackground ? '#fff' : '#4CAF50',
                       transition: 'background-color 0.3s'
                     }}
-                    onClick={() => inventoryFunctions.increaseQuantity(name)}
+                    onClick={() => increaseQuantity(name)}
                     onMouseOver={(e) => e.currentTarget.style.backgroundColor = isGreenBackground ? '#c7c5c5' : '#3a8a3d'}
                     onMouseOut={(e) => e.currentTarget.style.backgroundColor = isGreenBackground ? '#fff' : '#4CAF50'}
                   >
@@ -219,7 +195,7 @@ export default function Home() {
                   <Button
                     variant="contained"
                     style={{ backgroundColor: '#C70039' }}
-                    onClick={() => inventoryFunctions.removeItem(name)}
+                    onClick={() => removeItem(name)}
                   >
                     Remove
                   </Button>
@@ -238,27 +214,27 @@ export default function Home() {
       >
         <Box sx={style}>
           <Typography id="modal-modal-title" variant="h6" component="h2">
-            Add Item
+            Add New Item
           </Typography>
-          <Stack width="100%" direction={'row'} spacing={2}>
-            <TextField
-              id="outlined-basic"
-              label="Item"
-              variant="outlined"
-              fullWidth
-              value={itemName}
-              onChange={(e) => setItemName(e.target.value)}
-            />
+          <TextField
+            label="Item Name"
+            variant="outlined"
+            value={itemName}
+            onChange={(e) => setItemName(e.target.value)}
+            fullWidth
+            margin="normal"
+          />
+          <Stack spacing={2} direction="row" justifyContent="flex-end">
+            <Button onClick={handleClose} variant="outlined">Cancel</Button>
             <Button
-              variant="outlined"
-              style={{ borderColor: '#4CAF50', color: '#4CAF50' }}
               onClick={() => {
-                inventoryFunctions.addItem(itemName)
+                addItem(itemName)
                 setItemName('')
                 handleClose()
               }}
+              variant="contained"
             >
-              Add
+              Add Item
             </Button>
           </Stack>
         </Box>
