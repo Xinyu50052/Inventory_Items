@@ -35,15 +35,7 @@ export default function Home() {
 
   const removeItem = async (item) => {
     const docRef = doc(collection(firestore, 'inventory'), item)
-    const docSnap = await getDoc(docRef)
-    if (docSnap.exists()) {
-      const { quantity } = docSnap.data()
-      if (quantity === 1) {
-        await deleteDoc(docRef)
-      } else {
-        await setDoc(docRef, { quantity: quantity - 1 })
-      }
-    }
+    await deleteDoc(docRef)
     await updateInventory()
   }
 
@@ -141,7 +133,7 @@ export default function Home() {
         </Box>
         <Stack width="100%" height="calc(100vh - 200px)" spacing={0} overflow={'auto'}>
           {filteredInventory.map(({ name, quantity }, index) => {
-            const isGreenBackground = index % 2 !== 0
+            const isGreenBackground = index % 2 === 0 // Start with green for the first item and alternate
             return (
               <Box
                 key={name}
@@ -170,10 +162,10 @@ export default function Home() {
                       borderColor: isGreenBackground ? '#4CAF50' : '#fff',
                       color: isGreenBackground ? '#4CAF50' : '#fff',
                       backgroundColor: isGreenBackground ? '#fff' : '#4CAF50',
-                      transition: 'background-color 0.3s'
+                      transition: 'background-color 0.3s',
                     }}
                     onClick={() => decreaseQuantity(name)}
-                    onMouseOver={(e) => e.currentTarget.style.backgroundColor = isGreenBackground ? '#4CAF50' : '#fff'}
+                    onMouseOver={(e) => e.currentTarget.style.backgroundColor = isGreenBackground ? '#c7c5c5' : '#3a8a3d'}
                     onMouseOut={(e) => e.currentTarget.style.backgroundColor = isGreenBackground ? '#fff' : '#4CAF50'}
                   >
                     -
@@ -193,10 +185,10 @@ export default function Home() {
                       borderColor: isGreenBackground ? '#4CAF50' : '#fff',
                       color: isGreenBackground ? '#4CAF50' : '#fff',
                       backgroundColor: isGreenBackground ? '#fff' : '#4CAF50',
-                      transition: 'background-color 0.3s'
+                      transition: 'background-color 0.3s',
                     }}
                     onClick={() => increaseQuantity(name)}
-                    onMouseOver={(e) => e.currentTarget.style.backgroundColor = isGreenBackground ? '#4CAF50' : '#fff'}
+                    onMouseOver={(e) => e.currentTarget.style.backgroundColor = isGreenBackground ? '#c7c5c5' : '#3a8a3d'}
                     onMouseOut={(e) => e.currentTarget.style.backgroundColor = isGreenBackground ? '#fff' : '#4CAF50'}
                   >
                     +
@@ -204,7 +196,7 @@ export default function Home() {
                   <Button
                     variant="contained"
                     style={{ backgroundColor: '#C70039' }}
-                    onClick={() => removeItem(name)}
+                    onClick={() => removeItem(name)} // Deletes all quantities of the item
                   >
                     Remove
                   </Button>
